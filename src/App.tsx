@@ -17,3 +17,10 @@ function App() {
 }
 
 export default App;
+
+declare global {
+  interface Window {
+      YT: any;
+      onYTReady: any;
+  }
+}

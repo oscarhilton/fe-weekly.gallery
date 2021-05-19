@@ -17,6 +17,8 @@ import { SocketContext } from '../providers/Socket.provider';
 
 // Desktop
 import Desktop from '../molecules/desktop/Desktop.molecule.desktop';
+import ChatWindow from '../molecules/desktop/ChatWindow.molecule.desktop';
+import MediaPopup from '../molecules/MediaPopup.molecule';
 
 // Mobile
 import BootScreen from '../molecules/mobile/BootScreen.molecule.mobile';
@@ -27,7 +29,7 @@ const RIGHT_MOUSE_BUTTON = 2;
 export default function MainGame() {
   const handle = useFullScreenHandle();
 
-  const { handleSendToSocket, populousCursors, identity } = React.useContext(SocketContext);
+  const { handleSendToSocket, populousCursors, identity, serverBoottime, serverTime } = React.useContext(SocketContext);
 
   const stageRef = React.useRef<Konva.Stage>(null);
   const cursorLayer = React.useRef<Konva.Layer>(null);
@@ -37,10 +39,17 @@ export default function MainGame() {
   const [booted, setBooted] = React.useState(false);
 
   const [dragging, setDragging] = React.useState(true);
-  const [stageHeight, setStageHeight] = React.useState(window.innerHeight || 0);
-  const [stageWidth, setStageWidth] = React.useState(window.innerWidth || 0);
-  const [visibleHandles, setVisibleHandles] = React.useState(true);
-  const [chatIsActive, setChatIsActive] = React.useState(true);
+  const [dragValueX, setDragValueX] = React.useState(0);
+  const [dragValueY, setDragValueY] = React.useState(0);
+
+  const [mouseX, setMouseX] = React.useState<number>(0);
+  const [mouseY, setMouseY] = React.useState<number>(0);
+
+  const [stageHeight, setStageHeight] = React.useState<number>(window.innerHeight || 0);
+  const [stageWidth, setStageWidth] = React.useState<number>(window.innerWidth || 0);
+  const [visibleHandles, setVisibleHandles] = React.useState<boolean>(true);
+  const [chatIsActive, setChatIsActive] = React.useState<boolean>(false);
+  const [theatreIsActive, setTheatreIsActive] = React.useState<boolean>(false);
 
   const fitStageIntoParentContainer = () => {
     setStageHeight(window.innerHeight);
@@ -55,6 +64,8 @@ export default function MainGame() {
 
     if (stagePos) {
       var pos = transform.point(stagePos);
+      setMouseX(pos.x);
+      setMouseY(pos.y);
       handleSendToSocket("clientMouseMove", { x: pos.x, y: pos.y, identity, stageWidth, stageHeight });
     }
   }, [stageRef, stageRef, stageWidth, stageHeight]);
@@ -96,6 +107,7 @@ export default function MainGame() {
 
   const [cursor] = useImage('/assets/cursor.svg');
   const [hand] = useImage('/assets/hand.svg');
+  const [grass] = useImage('/assets/grass.png');
 
   // Hotkeys
   useHotkeys('ctrl+k', () => setVisibleHandles(true));
@@ -115,9 +127,12 @@ export default function MainGame() {
   const DRAW_SIZE_MAX = 1000;
 
   const dragBoundsConstaint = (pos: { x: number, y: number }) => {
-    console.log(pos)
     var newX = pos.x < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.x > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.x;
     var newY = pos.y < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.y > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.y;
+
+    setDragValueX(newX);
+    setDragValueY(newY);
+
     return {
       x: newX,
       y: newY,
@@ -146,7 +161,6 @@ export default function MainGame() {
   }
 
   const handleLayerMouseUp = () => {
-    console.log("MOUSE UP!")
     handleSendToSocket("mouseState", "mouseup");
   }
 
@@ -159,20 +173,46 @@ export default function MainGame() {
 
   const enableChatWindow = () => setChatIsActive(true);
   const disableChatWindow = () => setChatIsActive(false);
+
+  const startTheatre = () => setTheatreIsActive(true);
+  const stopTheatre = () => setTheatreIsActive(false);
+
+  const actualMousePosition = React.useMemo(() => ({
+    x: mouseX + dragValueX,
+    y: mouseY + dragValueY,
+  }), [mouseX, mouseY]);
   
   return (
-    <>
+    <Game>
     <NoMouse isActive={!chatIsActive} >
       {!handle.active && (
         <>
         <Stage ref={stageRef} width={stageWidth} height={stageHeight}>
-          <Layer ref={desktopLayer} draggable={dragging} dragBoundFunc={dragBoundsConstaint} onMouseDown={handleLayerMouseDown} onMouseUp={handleLayerMouseUp} onDragEnd={handleLayerMouseUp}>
-            <Group>
-              {/* <Rect y={-stageHeight} fill="#000" width={DRAW_SIZE_MAX * 3} height={stageHeight} listening={false} /> */}
-              {/* <Rect y={-stageHeight} fill="#000" width={-stageWidth} height={stageHeight + DRAW_SIZE_MAX} listening={false} /> */}
-              <Rect y={-200} fill="#676767" width={DRAW_SIZE_MAX * 3} height={200} />
-              <Rect isGround fill="#323232" width={DRAW_SIZE_MAX * 3} height={DRAW_SIZE_MAX} />
-              {booted ? <Desktop enableChatWindow={enableChatWindow} disableChatWindow={disableChatWindow} updateClothing={updateClothing} stageHeight={stageHeight} stageWidth={stageWidth} layer={desktopLayer} /> : <BootScreen />}
+          <Layer
+            ref={desktopLayer}
+            draggable={dragging}
+            dragBoundFunc={dragBoundsConstaint}
+            onMouseDown={handleLayerMouseDown}
+            onMouseUp={handleLayerMouseUp}
+            onDragEnd={handleLayerMouseUp}
+          >
+           <Group>
+              <Rect y={-200} fill={theatreIsActive ? "#121212" : "#cccccc"} width={DRAW_SIZE_MAX * 3} height={200} />
+              <Rect isGround width={DRAW_SIZE_MAX * 3} height={DRAW_SIZE_MAX} fillPatternImage={grass} opacity={theatreIsActive ? 0.1 : 1} />
+              {booted ? (
+                <Desktop
+                  startTheatre={startTheatre}
+                  stopTheatre={stopTheatre}
+                  enableChatWindow={enableChatWindow}
+                  disableChatWindow={disableChatWindow}
+                  updateClothing={updateClothing}
+                  stageHeight={stageHeight}
+                  stageWidth={stageWidth}
+                  layer={desktopLayer}
+                  theatreIsActive={theatreIsActive}
+                />
+               ) : <BootScreen />
+              }
               {populousCursors && populousCursors.map(({ x, y, clothing, identity: handle, toast, mouseState }: { x: number, y: number, clothing?: string, identity: string, toast: string, mouseState: string }) =>  {
                 return (
                   <>
@@ -197,80 +237,26 @@ export default function MainGame() {
         </>
       )}
     </NoMouse>
-    <ChatWindow active={chatIsActive}>
-      <ChatContainer>
-        <BubbleContainer><ChatUser>Dave</ChatUser><ChatBubble>Hello world!</ChatBubble><ChatTime>a moment ago</ChatTime></BubbleContainer>
-        <BubbleContainer><ChatUser>Dave</ChatUser><ChatBubble>Yes, hello!</ChatBubble><ChatTime>a moment ago</ChatTime></BubbleContainer>
-        <BubbleContainer><ChatUser>Dave</ChatUser><ChatBubble>Hows everyone doing!?</ChatBubble><ChatTime>a moment ago</ChatTime></BubbleContainer>
-        <BubbleContainer><ChatUser>Dave</ChatUser><ChatBubble>Great!</ChatBubble><ChatTime>a moment ago</ChatTime></BubbleContainer>
-        <BubbleContainer><ChatUser>Bob</ChatUser><ChatBubble client>Hey!</ChatBubble><ChatTime>a moment ago</ChatTime></BubbleContainer>
-      </ChatContainer>
-    </ChatWindow>
-    </>
+    <MediaPopup serverTime={serverTime} active={theatreIsActive} x={dragValueX} y={dragValueY} />
+    <ChatWindow x={actualMousePosition.x} y={actualMousePosition.y} chatIsActive={chatIsActive} />
+    <Ping>{serverBoottime}/ms</Ping>
+  </Game>
   )
 }
 
-const ChatWindow = styled.div`
+const Ping = styled.div`
   position: fixed;
+  bottom: 20px;
+  left: 20px;
+`;
+
+const Game = styled.div`
   top: 0;
   left: 0;
   bottom: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.8);
-  pointer-events: none;
-  opacity: ${({ active }: { active: boolean }) => active ? 1 : 0};
-  display: inline-flex;
-  flex-direction: column;
-  transition: opacity 0.2s, backdrop-filter 0.2s;
-  padding: 50px;
-  backdrop-filter: blur(10px) sepia(.9);
-`;
-
-const ChatContainer = styled.div`
-  max-width: 1000px;
-  width: 100%;
-  margin: auto;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-`;
-
-const BubbleContainer = styled.div`
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-`;
-
-const ChatBubble = styled.div`
-  padding: 8px 10px;
-  margin: 5px 0;
-  background: ${({ client }: { client?: boolean }) => client ? "lightgreen" : "#323232"};
-  float: ${({ client }: { client?: boolean }) => client ? "right" : "left"};
-  display: inline-block;
-  border-radius: 5px;
-  font-size: 15px;
-  color: ${({ client }: { client?: boolean }) => client ? "#212121" : "#cccccc"};
-`;
-
-const ChatTime = styled.div`
-  align-self: center;
-  color: #ccc;
-  font-size: 10px;
-  opacity: 0.2;
-  width: 10%;
-  margin-left: 20px;
-  font-style: italic;
-  width: 25%;
-  text-align: right;
-`;
-
-const ChatUser = styled.div`
-  align-self: center;
-  color: #ccc;
-  font-size: 12px;
-  opacity: 0.4;
-  width: 25%;
+  posiition: absolute;
+  overflow: hidden;
 `;
 
 const NoMouse = styled.div`
