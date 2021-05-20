@@ -127,8 +127,10 @@ export default function MainGame() {
   const DRAW_SIZE_MAX = 1000;
 
   const dragBoundsConstaint = (pos: { x: number, y: number }) => {
-    var newX = pos.x < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.x > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.x;
-    var newY = pos.y < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.y > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.y;
+    // var newX = pos.x < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.x > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.x;
+    // var newY = pos.y < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.y > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.y;
+    var newX = pos.x;
+    var newY = pos.y;
 
     setDragValueX(newX);
     setDragValueY(newY);
@@ -196,9 +198,7 @@ export default function MainGame() {
             onMouseUp={handleLayerMouseUp}
             onDragEnd={handleLayerMouseUp}
           >
-           <Group>
-              <Rect y={-200} fill={theatreIsActive ? "#121212" : "#cccccc"} width={DRAW_SIZE_MAX * 3} height={200} />
-              <Rect isGround width={DRAW_SIZE_MAX * 3} height={DRAW_SIZE_MAX} fillPatternImage={grass} opacity={theatreIsActive ? 0.1 : 1} />
+           <Group>    
               {booted ? (
                 <Desktop
                   startTheatre={startTheatre}

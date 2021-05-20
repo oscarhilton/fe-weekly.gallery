@@ -3,9 +3,6 @@ import styled from 'styled-components';
 
 export default function MeidaPopup({ x, y, active, serverTime }: { x: number, y: number, active: boolean, serverTime: number }) {
   const playTime = React.useMemo(() => Math.floor(serverTime % 4464000 / 1000), [serverTime]);
-
-  console.log(playTime);
-
   return (
     active ? (
       <Container>
