@@ -29,8 +29,7 @@ export const SocketContext = React.createContext({
   serverTime: 0,
 });
 
-const
-MasterSocket = new Socket("192.168.100.54", 4001);
+const MasterSocket = new Socket("192.168.100.54", 4001);
 
 export default function SocketProvider({ children }: { children: any }) {
   const [desktopConnected, setDesktopConnected] = React.useState<boolean>(isMobile);
@@ -56,7 +55,8 @@ export default function SocketProvider({ children }: { children: any }) {
 
   React.useEffect(() => {
     MasterSocket.on("mousePositionsChange", ({ users, currentTime, boottime }: { users: any, currentTime: number, boottime: number }) => {
-      if (!users || !currentTime) return;
+      console.log("beep", users, currentTime);
+      if (!users) return;
       if (serverBoottime === 0) {
         setServerBoottime(boottime);
       }

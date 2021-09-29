@@ -10,22 +10,6 @@ const tiles = "GGGGGGGGGGGGGGGGGGGGGGGGG" +
               "GGGGGGGGGGGGGGGGGGGGGGGGG" +
               "GGGGGGGGGGGGGGGGGGGGGGGGG" +
               "GGGGGGGGGGGGGGGGGGGGGGGGG" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "XXXXXXGGGGGGGGGGGGGXXXXXX" +
-              "GGGGGGGGGGGGGGGGGGGGGGGGG" +
-              "GGGGGGGGGGGGGGGGGGGGGGGGG" +
-              "GGGGGGGGGGGGGGGGGGGGGGGGG" +
               "GGGGGGGGGGGGGGGGGGGGGGGGG" +
               "GGGGGGGGGGGGGGGGGGGGGGGGG" +
               "GGGGGGGGGGGGGGGGGGGGGGGGG" +
@@ -59,9 +43,9 @@ export default function Desktop({
   {
   return (
     <Group
-      rotation={30}
-      scaleY={0.86}
-      skewX={-0.3}
+      // rotation={30}
+      // scaleY={0.86}
+      // skewX={-0.3}
     >
       <Group opacity={theatreIsActive ? 0.1 : 1}>
         {tilesArray.map((tile: string, index: number) => {
