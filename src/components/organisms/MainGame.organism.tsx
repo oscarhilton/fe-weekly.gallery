@@ -29,12 +29,13 @@ export default function MainGame() {
 	const handle = useFullScreenHandle();
 
 	const {
-		handleSendToSocket,
 		populousCursors,
 		identity,
 		serverBoottime,
 		serverTime,
 	} = React.useContext(SocketContext);
+
+	const { updateDatabase } = React.useContext(IPFSContext);
 
 	const stageRef = React.useRef<Konva.Stage>(null);
 	const cursorLayer = React.useRef<Konva.Layer>(null);
@@ -75,7 +76,7 @@ export default function MainGame() {
 			var pos = transform.point(stagePos);
 			setMouseX(pos.x);
 			setMouseY(pos.y);
-			handleSendToSocket("clientMouseMove", {
+			updateDatabase("clientMouseMove", {
 				x: pos.x,
 				y: pos.y,
 				identity,
@@ -86,7 +87,7 @@ export default function MainGame() {
 	}, [stageRef, stageRef, stageWidth, stageHeight]);
 
 	const updateClothing = (chosenClothing: string) => {
-		handleSendToSocket("changeAvatar", { chosenClothing, identity });
+		updateDatabase("changeAvatar", { chosenClothing, identity });
 	};
 
 	React.useEffect(() => {
@@ -126,16 +127,16 @@ export default function MainGame() {
 	// Hotkeys
 	useHotkeys("ctrl+k", () => setVisibleHandles(true));
 	useHotkeys("ctrl+l", () => setVisibleHandles(false));
-	useHotkeys("1", () => handleSendToSocket("broadcastToast", "🤗"));
-	useHotkeys("2", () => handleSendToSocket("broadcastToast", "😍"));
-	useHotkeys("3", () => handleSendToSocket("broadcastToast", "🤩"));
-	useHotkeys("4", () => handleSendToSocket("broadcastToast", "🙌"));
-	useHotkeys("5", () => handleSendToSocket("broadcastToast", "👈"));
-	useHotkeys("6", () => handleSendToSocket("broadcastToast", "🌈"));
-	useHotkeys("7", () => handleSendToSocket("broadcastToast", "😂"));
-	useHotkeys("8", () => handleSendToSocket("broadcastToast", "🍺"));
-	useHotkeys("9", () => handleSendToSocket("broadcastToast", "🥳"));
-	useHotkeys("0", () => handleSendToSocket("broadcastToast", "🎉"));
+	useHotkeys("1", () => updateDatabase("broadcastToast", "🤗"));
+	useHotkeys("2", () => updateDatabase("broadcastToast", "😍"));
+	useHotkeys("3", () => updateDatabase("broadcastToast", "🤩"));
+	useHotkeys("4", () => updateDatabase("broadcastToast", "🙌"));
+	useHotkeys("5", () => updateDatabase("broadcastToast", "👈"));
+	useHotkeys("6", () => updateDatabase("broadcastToast", "🌈"));
+	useHotkeys("7", () => updateDatabase("broadcastToast", "😂"));
+	useHotkeys("8", () => updateDatabase("broadcastToast", "🍺"));
+	useHotkeys("9", () => updateDatabase("broadcastToast", "🥳"));
+	useHotkeys("0", () => updateDatabase("broadcastToast", "🎉"));
 
 	const dragBoundsConstaint = (pos: { x: number; y: number }) => {
 		// var newX = pos.x < DRAW_SIZE_MIN ? DRAW_SIZE_MIN : pos.x > DRAW_SIZE_MAX ? DRAW_SIZE_MAX : pos.x;
@@ -155,14 +156,14 @@ export default function MainGame() {
   console.log(populousCursors);
 
 	const handleLayerMouseUp = () => {
-		handleSendToSocket("mouseState", "mouseup");
+		updateDatabase("mouseState", "mouseup");
 	};
 
 	const handleLayerMouseDown = React.useCallback(
 		(e: any) => {
 			setDragging(e.target.attrs.isGround);
 			if (e.target.attrs.isGround && e.evt.button === 0) {
-				handleSendToSocket("mouseState", "mousedown");
+				updateDatabase("mouseState", "mousedown");
 			}
 		},
 		[setDragging]

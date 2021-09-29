@@ -1,15 +1,40 @@
 import React from 'react';
 
 interface context {
-  data: string
+	updateDatabase: (key: string, payload: any) => void;
+}
+
+interface clientUser {
+  x: number;
+  y: number;
 }
 
 const MAIN_DB_NAME = "weekly.gallery_";
 
-export const IPFSContext = React.createContext<context>({ data: 'data' });
+const IPFS_CONFIG = {
+	start: true,
+	preload: {
+		enabled: false
+	},
+	EXPERIMENTAL: {
+		pubsub: true
+	},
+	config: {
+		Addresses: {
+			Swarm: [
+				// Use IPFS dev webrtc signal server
+				"/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/",
+				"/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star/"
+			]
+		}
+	}
+};
+
+export const IPFSContext = React.createContext<context>({ updateDatabase: () => {} });
 
 export default function IPFSProvider({ children }: { children: any }) {
   const [loaded, setLoaded] = React.useState<number>(0);
+  const [userData, setUserData] = React.useState<clientUser>();
   const [currentHash, setCurrentHash] = React.useState<string>("");
   const [ipfsConntected, setIpfsConnected] = React.useState<boolean>(false);
   const [orbitDbConntected, setOrbitDbConnected] = React.useState<boolean>(false);
@@ -17,61 +42,43 @@ export default function IPFSProvider({ children }: { children: any }) {
 
   React.useEffect(() => {
     (async () => {
-			const ipfs = await window.Ipfs.create({
+      const ipfs = await window.Ipfs.create({
 				repo: "/weekly.gallery.ipfs",
-				start: true,
-				preload: {
-					enabled: false
-				},
-				EXPERIMENTAL: {
-					pubsub: true
-				},
-				config: {
-					Addresses: {
-						Swarm: [
-							// Use IPFS dev webrtc signal server
-							"/dns4/wrtc-star1.par.dwebops.pub/tcp/443/wss/p2p-webrtc-star/",
-							"/dns4/wrtc-star2.sjc.dwebops.pub/tcp/443/wss/p2p-webrtc-star/"
-						]
-					}
-				}
+				...IPFS_CONFIG
 			});
-			setIpfsConnected(!!ipfs);
-			const orbitdb = await window.OrbitDB.createInstance(ipfs);
+      setIpfsConnected(!!ipfs);
+      const orbitdb = await window.OrbitDB.createInstance(ipfs);
 
-			const options = {
-				// Give write access to everyone
-				accessController: {
-					write: ["*"]
-				}
-			};
+      const options = {
+        maxHistory: 1,
+        accessController: {
+          write: ["*"]
+        },
+        onLoad: () => setOrbitDbConnected(orbitdb.id),
+      };
 
-			// ACTIVE USERS DB
-			// const activeUsersCounter = await orbitdb.counter(MAIN_DB_NAME + "users.total", options);
+      // ACTIVE USERS DB
+      const activeUsersCounter = await orbitdb.counter(
+				MAIN_DB_NAME + "users.total",
+				options
+			);
 
-			// setOrbitDbConnected(orbitdb.id);
-			// activeUsersCounter.events.on("ready", async () => {
-			//   await activeUsersCounter.inc();
-			//   updateActiveUsersUI(activeUsersCounter.value);
-			// });
-			// activeUsersCounter.events.on("replicated", () => updateActiveUsersUI(activeUsersCounter.value));
-			// activeUsersCounter.events.on("write", () => updateActiveUsersUI(activeUsersCounter.value));
-			// activeUsersCounter.events.on('load.progress', (address: any, hash: any, entry: any, progress: any, total: any) =>  {
-			//   setCurrentHash(hash);
-			//   setLoaded(progress / total)
-			// });
-			// activeUsersCounter.load();
+      activeUsersCounter.events.on("ready", async () => {
+        await activeUsersCounter.inc(2000);
+        updateActiveUsersUI(activeUsersCounter.value);
+      });
+      activeUsersCounter.events.on("replicated", () => updateActiveUsersUI(activeUsersCounter.value));
+      activeUsersCounter.events.on("write", () => updateActiveUsersUI(activeUsersCounter.value));
+      activeUsersCounter.events.on('load.progress', (address: any, hash: any, entry: any, progress: any, total: any) =>  {
+        setCurrentHash(hash);
+        setLoaded(progress / total)
+      });
+			activeUsersCounter.load();
 
-			// USERS DB
-			const test = await orbitdb.docs("test", { indexBy: "id" });
-			const hash = await test.put({
-				id: "123"
-			});
-      console.log(hash);
-			test.events.on("ready", async () => {
-        setOrbitDbConnected(true);
-			});
-		})();
+      // USERS DB
+
+
+    })();
   }, []);
 
   const updateActiveUsersUI = (value: number) => setActiveUsers(value);
@@ -79,7 +86,7 @@ export default function IPFSProvider({ children }: { children: any }) {
   return (
 		<IPFSContext.Provider
 			value={{
-				data: "data2"
+				updateDatabase: () => {}
 			}}
 		>
 			<p>{Math.floor(loaded * 100)}/100 loaded</p>
