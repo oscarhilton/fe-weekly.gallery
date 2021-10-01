@@ -70,8 +70,6 @@ export default function IPFSProvider({ children }: { children: any }) {
 
 			const orbitdb = await window.OrbitDB.createInstance(ipfs);
 
-			console.log(orbitdb.identity.publicKey);
-
 			const options = {
 				maxHistory: 1,
 				accessController: {
@@ -82,12 +80,45 @@ export default function IPFSProvider({ children }: { children: any }) {
 			setOrbitDbConnected(orbitdb.id);
 
 			// ACTIVE USERS DB
-			const swarmDatabase = await orbitdb.docs(MAIN_DB_NAME + "swarm", options);
+			const swarmDatabase = await orbitdb.docs(MAIN_DB_NAME + "swarm", { ...options, maxHistory: 10 });
 
 			swarmDatabase.load();
 
+			swarmDatabase.events.on('load', async () => {
+				const everyone = await swarmDatabase.get("");
+				const initiator =
+					everyone.findIndex(
+						(peer: any) => peer._id === orbitdb.identity.publicKey
+					) < 0;
+				// console.log(
+				// 	everyone.findIndex(
+				// 		(peer: any) => peer._id === orbitdb.identity.publicKey
+				// 	)
+				// );
+				// console.log(initiator, 'initiator');
+				console.log(
+					everyone,
+					orbitdb.identity.publicKey,
+					everyone.findIndex(
+						(peer: any) => peer._id === orbitdb.identity.publicKey
+					)
+				);
+			})
+
 			swarmDatabase.events.on("replicated", async () => {
-				const peer = new Peer({ ...SIMPLE_PEER_CONFIG, initiator: true }) as any;
+				const everyone = await swarmDatabase.get('');
+				const initiator =
+					everyone.findIndex(
+						(peer: any) => peer._id === orbitdb.identity.publicKey
+					) < 0;
+					// console.log(
+					// 	everyone.findIndex(
+					// 		(peer: any) => peer._id === orbitdb.identity.publicKey
+					// 	)
+					// );
+				// console.log(initiator, 'initiator');
+				console.log(everyone, orbitdb.identity.publicKey,	everyone.findIndex((peer: any) => peer._id === orbitdb.identity.publicKey));
+				const peer = new Peer({ ...SIMPLE_PEER_CONFIG, initiator }) as any;
 				peer.on(
 					"signal",
 					async (signal: any) => {
@@ -109,9 +140,11 @@ export default function IPFSProvider({ children }: { children: any }) {
 				const others = await swarmDatabase.query(
 					(peer: any) => peer._id !== orbitdb.identity.publicKey
 				);
-				others.forEach((other: any) => {
-					peer.signal(other.signal);
-				})
+				if (initiator) {
+					others.forEach((other: any) => {
+						peer.signal(other.signal);
+					});
+				}
 			});
 
 			// ACTIVE USERS DB
@@ -147,9 +180,6 @@ export default function IPFSProvider({ children }: { children: any }) {
 				updateDatabase: () => {}
 			}}
 		>
-			<p>{Math.floor(loaded * 100)}/100 loaded</p>
-			<div>{currentHash}</div>
-			{activeUsers}
 			<ul>
 				<li>IPFS: {ipfsConntected.toString()}</li>
 				<li>DATABASE: {orbitDbConntected.toString()}</li>
